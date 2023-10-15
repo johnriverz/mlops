@@ -278,3 +278,72 @@ class CustomSigma3Transformer(BaseEstimator, TransformerMixin):
         self.fit(X, y)
         result = self.transform(X)
         return result
+
+
+# transformer for tukey calculation
+class CustomTukeyTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self, target_column, fence="outer"):
+        assert fence in ["inner", "outer"]
+        self.target_column = target_column
+        self.fence = fence
+        self.is_fit = False  # check this is True before using transform
+        self.low = None
+        self.high = None
+
+    # computes the tukey calculation and stores the result for the transform method later
+    # returns tuple of lower and upper bound
+    def fit(self, X, y=None):
+        self.is_fit = True
+
+        assert isinstance(
+            X, pd.core.frame.DataFrame
+        ), f"expected Dataframe but got {type(X)} instead."
+        assert self.target_column in X.columns, f"unknown column {self.target_column}"
+        assert all(
+            [isinstance(v, (int, float)) for v in X[self.target_column].to_list()]
+        )
+
+        # your code below
+        if self.fence == "outer":
+            iqr = q3 - q1  # inter-quartile range, where q1 is 25% and q3 is 75%
+            outer_low = q1 - 3 * iqr  # factor of 2 larger
+            outer_high = q3 + 3 * iqr
+
+            self.low, self.high = outer_low, outer_high
+        else:
+            iqr = q3 - q1  # inter-quartile range, where q1 is 25% and q3 is 75%
+            inner_low = q1 - 1.5 * iqr
+            inner_high = q3 + 1.5 * iqr
+
+            self.low, self.high = inner_low, inner_high
+
+        return self.low, self.high
+
+    # clips the outlier rows and resets the index
+    # should always be run after fit
+    def transform(self, X):
+        # make sure transformer is fitted
+        assert (
+            self.is_fit
+        ), f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+
+        # make sure we have a dataframe
+        assert isinstance(
+            X, pd.core.frame.DataFrame
+        ), f"{self.__class__.__name__}.transform expected Dataframe but got {type(X)} instead."
+
+        # clip the columns in self.target_column and reset index
+        X_ = X.copy()
+        X_[self.target_column] = X_[self.target_column].clip(
+            lower=self.low, upper=self.high
+        )
+
+        X_ = X_.reset_index(drop=True)
+
+        return X_
+
+    # write fit_transform that does not skip fit
+    def fit_transform(self, X, y=None):
+        self.fit(X, y)
+        result = self.transform(X)
+        return result
