@@ -183,7 +183,7 @@ class CustomPearsonTransformer(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         self.is_fit = True
 
-        df_corr = transformed_df.corr(method="pearson")
+        df_corr = X.corr(method="pearson")
         masked_df = np.abs(df_corr) > self.threshold
         upper_mask = np.triu(np.abs(df_corr) > self.threshold, k=1)
         self.correlated_columns = [
@@ -208,7 +208,68 @@ class CustomPearsonTransformer(BaseEstimator, TransformerMixin):
 
         # drop columns in self.correlated_columns
         X_ = X.copy()
-        X_ = transformed_df.drop(columns=self.correlated_columns)
+        X_ = X_.drop(columns=self.correlated_columns)
+
+        return X_
+
+    # write fit_transform that does not skip fit
+    def fit_transform(self, X, y=None):
+        self.fit(X, y)
+        result = self.transform(X)
+        return result
+
+
+# transformer for 3Sigma
+class CustomSigma3Transformer(BaseEstimator, TransformerMixin):
+    def __init__(self, target_column):
+        self.target_column = target_column
+        self.low_bound = None
+        self.high_bound = None
+        self.is_fit = False  # check this is True before using transform
+
+    # computes the 3Sigma percentages and stores them for the transform method later
+    # returns a tuple of the lower and upper boundary
+    def fit(self, X, y=None):
+        self.is_fit = True
+
+        assert isinstance(
+            X, pd.core.frame.DataFrame
+        ), f"expected Dataframe but got {type(X)} instead."
+        assert self.target_column in X.columns, f"unknown column {self.target_column}"
+        assert all(
+            [isinstance(v, (int, float)) for v in X[self.target_column].to_list()]
+        )
+
+        # your code below
+        col_mean = X[self.target_column].mean()  # average
+        col_sigma = X[self.target_column].std()  # standard deviation
+
+        # find boundaries for outliers
+        self.low_bound = col_mean - 3 * col_sigma
+        self.high_bound = col_mean + 3 * col_sigma
+
+        return self.low_bound, self.high_bound
+
+    # clips the outlier rows and resets the index
+    # should always be run after fit
+    def transform(self, X):
+        # make sure transformer is fitted
+        assert (
+            self.is_fit
+        ), f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+
+        # make sure we have a dataframe
+        assert isinstance(
+            X, pd.core.frame.DataFrame
+        ), f"{self.__class__.__name__}.transform expected Dataframe but got {type(X)} instead."
+
+        # clip the columns in self.target_column and reset index
+        X_ = X.copy()
+        X_[self.target_column] = X_[self.target_column].clip(
+            lower=self.low_bound, upper=self.high_bound
+        )
+
+        X_ = X_.reset_index(drop=True)
 
         return X_
 
