@@ -9,8 +9,8 @@ sklearn.set_config(
 )  # says pass pandas tables through pipeline instead of numpy matrices
 
 # # bring in tatanic data in trimmed form
-# url = 'https://raw.githubusercontent.com/fickas/asynch_models/main/datasets/titanic_trimmed.csv'
-# titanic_trimmed = pd.read_csv(url)
+# lib_url = 'https://raw.githubusercontent.com/fickas/asynch_models/main/datasets/titanic_trimmed.csv'
+# titanic_trimmed = pd.read_csv(lib_url)
 # titanic_features = titanic_trimmed.drop(columns='Survived') # drop the label column
 
 # # an example pipeline
