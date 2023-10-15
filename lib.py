@@ -8,6 +8,21 @@ sklearn.set_config(
     transform_output="pandas"
 )  # says pass pandas tables through pipeline instead of numpy matrices
 
+# # bring in tatanic data in trimmed form
+# url = 'https://raw.githubusercontent.com/fickas/asynch_models/main/datasets/titanic_trimmed.csv'
+# titanic_trimmed = pd.read_csv(url)
+# titanic_features = titanic_trimmed.drop(columns='Survived') # drop the label column
+
+# # an example pipeline
+# titanic_transformer = Pipeline(steps=[
+#     ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
+#     ('map_class', CustomMappingTransformer('Class', {'Crew': 0, 'C3': 1, 'C2': 2, 'C1': 3})),
+#     ('ohe_joined', CustomOHETransformer(target_column='Joined')),
+#     ], verbose=True)
+
+# transformed_df = titanic_transformer.fit_transform(titanic_features) # our transformed dataframe
+
+
 # This class will rename one or more columns.
 class CustomRenamingTransformer(BaseEstimator, TransformerMixin):
     # your __init__ method below
@@ -152,5 +167,53 @@ class CustomMappingTransformer(BaseEstimator, TransformerMixin):
 
     def fit_transform(self, X, y=None):
         # self.fit(X,y)
+        result = self.transform(X)
+        return result
+
+
+# a transformer for the pearson correlation coefficient
+class CustomPearsonTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self, threshold):
+        self.threshold = threshold
+        self.correlated_columns = None
+        self.is_fit = False  # check this is True before using transform
+
+    # computes the correlated columns and stores it for the transform method later
+    # returns self
+    def fit(self, X, y=None):
+        self.is_fit = True
+
+        df_corr = transformed_df.corr(method="pearson")
+        masked_df = np.abs(df_corr) > self.threshold
+        upper_mask = np.triu(np.abs(df_corr) > self.threshold, k=1)
+        self.correlated_columns = [
+            (df_corr.columns[index])
+            for index, col in enumerate(upper_mask.T)
+            if np.any(col)
+        ]
+        return self
+
+    # drops the correlated columns from fit method
+    # should always be run after fit
+    def transform(self, X):
+        # make sure transformer is fitted
+        assert (
+            self.is_fit
+        ), f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+
+        # make sure we have a dataframe
+        assert isinstance(
+            X, pd.core.frame.DataFrame
+        ), f"{self.__class__.__name__}.transform expected Dataframe but got {type(X)} instead."
+
+        # drop columns in self.correlated_columns
+        X_ = X.copy()
+        X_ = transformed_df.drop(columns=self.correlated_columns)
+
+        return X_
+
+    # write fit_transform that does not skip fit
+    def fit_transform(self, X, y=None):
+        self.fit(X, y)
         result = self.transform(X)
         return result
