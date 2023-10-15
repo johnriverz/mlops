@@ -304,6 +304,9 @@ class CustomTukeyTransformer(BaseEstimator, TransformerMixin):
         )
 
         # your code below
+        q1 = X[self.target_column].quantile(0.25)
+        q3 = X[self.target_column].quantile(0.75)
+
         if self.fence == "outer":
             iqr = q3 - q1  # inter-quartile range, where q1 is 25% and q3 is 75%
             outer_low = q1 - 3 * iqr  # factor of 2 larger
