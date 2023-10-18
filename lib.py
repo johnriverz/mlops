@@ -350,3 +350,54 @@ class CustomTukeyTransformer(BaseEstimator, TransformerMixin):
         self.fit(X, y)
         result = self.transform(X)
         return result
+
+
+# transformer for robust scaler
+class CustomRobustTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self, column):
+        # fill in rest below
+        self.column = column
+        self.is_fit = False
+        self.iqr = 0
+        self.med = 0
+
+    # computes the tukey calculation and stores the result for the transform method later
+    # returns tuple of lower and upper bound
+    def fit(self, X, y=None):
+        self.is_fit = True
+
+        assert isinstance(
+            X, pd.core.frame.DataFrame
+        ), f"expected Dataframe but got {type(X)} instead."
+        assert self.column in X.columns, f"unknown column {self.column}"
+        assert all([isinstance(v, (int, float)) for v in X[self.column].to_list()])
+
+        # your code below
+        self.iqr = X[self.column].quantile(0.75) - X[self.column].quantile(0.25)
+        self.med = X[self.column].median()
+
+    # clips the outlier rows and resets the index
+    # should always be run after fit
+    def transform(self, X):
+        # make sure transformer is fitted
+        assert (
+            self.is_fit
+        ), f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+
+        # make sure we have a dataframe
+        assert isinstance(
+            X, pd.core.frame.DataFrame
+        ), f"{self.__class__.__name__}.transform expected Dataframe but got {type(X)} instead."
+
+        # clip the columns in self.target_column and reset index
+        X_ = X.copy()
+        X_[self.column] -= self.med
+        X_[self.column] /= self.iqr
+
+        return X_
+
+    # write fit_transform that does not skip fit
+    def fit_transform(self, X, y=None):
+        self.fit(X, y)
+        result = self.transform(X)
+        return result
