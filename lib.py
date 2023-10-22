@@ -4,6 +4,8 @@ import sklearn
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 
+from sklearn.impute import KNNImputer # final step of the pipeline
+
 sklearn.set_config(
     transform_output="pandas"
 )  # says pass pandas tables through pipeline instead of numpy matrices
