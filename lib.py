@@ -12,6 +12,10 @@ import sys
 subprocess.call([sys.executable, '-m', 'pip', 'install', 'category_encoders'])  #replaces !pip install
 import category_encoders as ce
 
+# for find_random_state function
+from sklearn.neighbors import KNeighborsClassifier  #the KNN model
+from sklearn.metrics import f1_score  #typical metric used to measure goodness of a model
+
 sklearn.set_config(
     transform_output="pandas"
 )  # says pass pandas tables through pipeline instead of numpy matrices
@@ -409,3 +413,27 @@ class CustomRobustTransformer(BaseEstimator, TransformerMixin):
         self.fit(X, y)
         result = self.transform(X)
         return result
+
+# finds random state that will give us average 
+def find_random_state(features_df, labels, n=200):
+  model = KNeighborsClassifier(n_neighbors=5)  #instantiate with k=5.
+  vars = []  #collect test_error/train_error where error based on F1 score
+  rs_val = 0
+
+  # loop thru each random state (i)
+  for i in range(1, 200):
+      train_X, test_X, train_y, test_y = train_test_split(transformed_df, labels, test_size=0.2, shuffle=True,
+                                                      random_state=i, stratify=labels)
+      model.fit(train_X, train_y)  #train model
+      train_pred = model.predict(train_X)           #predict against training set
+      test_pred = model.predict(test_X)             #predict against test set
+      train_f1 = f1_score(train_y, train_pred)   #F1 on training predictions
+      test_f1 = f1_score(test_y, test_pred)      #F1 on test predictions
+      f1_ratio = test_f1/train_f1          #take the ratio
+      vars.append(f1_ratio)
+
+  rs_val = sum(vars)/len(vars)  #get average ratio value
+
+  idx = np.array(abs(vars - rs_val)).argmin()  #find the index of the smallest value
+
+  return idx 
