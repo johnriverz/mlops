@@ -20,6 +20,10 @@ sklearn.set_config(
     transform_output="pandas"
 )  # says pass pandas tables through pipeline instead of numpy matrices
 
+# random state variables
+titanic_variance_based_split = 107
+customer_variance_based_split = 113
+
 # # bring in tatanic data in trimmed form
 # lib_url = 'https://raw.githubusercontent.com/fickas/asynch_models/main/datasets/titanic_trimmed.csv'
 # titanic_trimmed = pd.read_csv(lib_url)
