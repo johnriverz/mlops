@@ -61,6 +61,11 @@ customer_transformer = Pipeline(steps=[
     ('impute', KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False)),
     ], verbose=True)
 
+# save fitted transformer
+fitted_pipeline = titanic_transformer.fit(X_train, y_train)  #notice just fit method called
+import joblib
+joblib.dump(fitted_pipeline, 'fitted_pipeline.pkl')
+
 # This class will rename one or more columns.
 class CustomRenamingTransformer(BaseEstimator, TransformerMixin):
     # your __init__ method below
