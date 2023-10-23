@@ -414,15 +414,16 @@ class CustomRobustTransformer(BaseEstimator, TransformerMixin):
         result = self.transform(X)
         return result
 
-# finds random state that will give us average 
+# takes a dataframe and runs the variance code on it. 
+# returns the value to use for the random state in the split method
 def find_random_state(features_df, labels, n=200):
   model = KNeighborsClassifier(n_neighbors=5)  #instantiate with k=5.
   vars = []  #collect test_error/train_error where error based on F1 score
   rs_val = 0
 
   # loop thru each random state (i)
-  for i in range(1, 200):
-      train_X, test_X, train_y, test_y = train_test_split(transformed_df, labels, test_size=0.2, shuffle=True,
+  for i in range(1, n):
+      train_X, test_X, train_y, test_y = train_test_split(features_df, labels, test_size=0.2, shuffle=True,
                                                       random_state=i, stratify=labels)
       model.fit(train_X, train_y)  #train model
       train_pred = model.predict(train_X)           #predict against training set
