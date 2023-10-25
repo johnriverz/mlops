@@ -29,42 +29,42 @@ customer_variance_based_split = 113
 # titanic_trimmed = pd.read_csv(lib_url)
 # titanic_features = titanic_trimmed.drop(columns='Survived') # drop the label column
 
-# two transformers
-titanic_transformer = Pipeline(steps=[
-    ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
-    ('map_class', CustomMappingTransformer('Class', {'Crew': 0, 'C3': 1, 'C2': 2, 'C1': 3})),
-    ('target_joined', ce.TargetEncoder(cols=['Joined'],
-                           handle_missing='return_nan', #will use imputer later to fill in
-                           handle_unknown='return_nan'  #will use imputer later to fill in
-    )),
-    ('tukey_age', CustomTukeyTransformer(target_column='Age', fence='outer')),
-    ('tukey_fare', CustomTukeyTransformer(target_column='Fare', fence='outer')),
-    ('scale_age', CustomRobustTransformer('Age')),  #from chapter 5
-    ('scale_fare', CustomRobustTransformer('Fare')),  #from chapter 5
-    ('imputer', KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False))  #from chapter 6
-    ], verbose=True)
+# # two transformers
+# titanic_transformer = Pipeline(steps=[
+#     ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
+#     ('map_class', CustomMappingTransformer('Class', {'Crew': 0, 'C3': 1, 'C2': 2, 'C1': 3})),
+#     ('target_joined', ce.TargetEncoder(cols=['Joined'],
+#                            handle_missing='return_nan', #will use imputer later to fill in
+#                            handle_unknown='return_nan'  #will use imputer later to fill in
+#     )),
+#     ('tukey_age', CustomTukeyTransformer(target_column='Age', fence='outer')),
+#     ('tukey_fare', CustomTukeyTransformer(target_column='Fare', fence='outer')),
+#     ('scale_age', CustomRobustTransformer('Age')),  #from chapter 5
+#     ('scale_fare', CustomRobustTransformer('Fare')),  #from chapter 5
+#     ('imputer', KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False))  #from chapter 6
+#     ], verbose=True)
 
-# transformed_df = titanic_transformer.fit_transform(titanic_features) # our transformed dataframe
+# # transformed_df = titanic_transformer.fit_transform(titanic_features) # our transformed dataframe
 
-customer_transformer = Pipeline(steps=[
-    ('map_os', CustomMappingTransformer('OS', {'Android': 0, 'iOS': 1})),
-    ('target_isp', ce.TargetEncoder(cols=['ISP'],
-                           handle_missing='return_nan', #will use imputer later to fill in
-                           handle_unknown='return_nan'  #will use imputer later to fill in
-    )),
-    ('map_level', CustomMappingTransformer('Experience Level', {'low': 0, 'medium': 1, 'high':2})),
-    ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
-    ('tukey_age', CustomTukeyTransformer('Age', 'inner')),  #from chapter 4
-    ('tukey_time spent', CustomTukeyTransformer('Time Spent', 'inner')),  #from chapter 4
-    ('scale_age', CustomRobustTransformer('Age')), #from 5
-    ('scale_time spent', CustomRobustTransformer('Time Spent')), #from 5
-    ('impute', KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False)),
-    ], verbose=True)
+# customer_transformer = Pipeline(steps=[
+#     ('map_os', CustomMappingTransformer('OS', {'Android': 0, 'iOS': 1})),
+#     ('target_isp', ce.TargetEncoder(cols=['ISP'],
+#                            handle_missing='return_nan', #will use imputer later to fill in
+#                            handle_unknown='return_nan'  #will use imputer later to fill in
+#     )),
+#     ('map_level', CustomMappingTransformer('Experience Level', {'low': 0, 'medium': 1, 'high':2})),
+#     ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
+#     ('tukey_age', CustomTukeyTransformer('Age', 'inner')),  #from chapter 4
+#     ('tukey_time spent', CustomTukeyTransformer('Time Spent', 'inner')),  #from chapter 4
+#     ('scale_age', CustomRobustTransformer('Age')), #from 5
+#     ('scale_time spent', CustomRobustTransformer('Time Spent')), #from 5
+#     ('impute', KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False)),
+#     ], verbose=True)
 
-# save fitted transformer
-fitted_pipeline = titanic_transformer.fit(X_train, y_train)  #notice just fit method called
-import joblib
-joblib.dump(fitted_pipeline, 'fitted_pipeline.pkl')
+# # save fitted transformer
+# fitted_pipeline = titanic_transformer.fit(X_train, y_train)  #notice just fit method called
+# import joblib
+# joblib.dump(fitted_pipeline, 'fitted_pipeline.pkl')
 
 # This class will rename one or more columns.
 class CustomRenamingTransformer(BaseEstimator, TransformerMixin):
