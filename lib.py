@@ -29,20 +29,20 @@ customer_variance_based_split = 113
 # titanic_trimmed = pd.read_csv(lib_url)
 # titanic_features = titanic_trimmed.drop(columns='Survived') # drop the label column
 
-# # two transformers
-# titanic_transformer = Pipeline(steps=[
-#     ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
-#     ('map_class', CustomMappingTransformer('Class', {'Crew': 0, 'C3': 1, 'C2': 2, 'C1': 3})),
-#     ('target_joined', ce.TargetEncoder(cols=['Joined'],
-#                            handle_missing='return_nan', #will use imputer later to fill in
-#                            handle_unknown='return_nan'  #will use imputer later to fill in
-#     )),
-#     ('tukey_age', CustomTukeyTransformer(target_column='Age', fence='outer')),
-#     ('tukey_fare', CustomTukeyTransformer(target_column='Fare', fence='outer')),
-#     ('scale_age', CustomRobustTransformer('Age')),  #from chapter 5
-#     ('scale_fare', CustomRobustTransformer('Fare')),  #from chapter 5
-#     ('imputer', KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False))  #from chapter 6
-#     ], verbose=True)
+# two transformers
+titanic_transformer = Pipeline(steps=[
+    ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
+    ('map_class', CustomMappingTransformer('Class', {'Crew': 0, 'C3': 1, 'C2': 2, 'C1': 3})),
+    ('target_joined', ce.TargetEncoder(cols=['Joined'],
+                           handle_missing='return_nan', #will use imputer later to fill in
+                           handle_unknown='return_nan'  #will use imputer later to fill in
+    )),
+    ('tukey_age', CustomTukeyTransformer(target_column='Age', fence='outer')),
+    ('tukey_fare', CustomTukeyTransformer(target_column='Fare', fence='outer')),
+    ('scale_age', CustomRobustTransformer('Age')),  #from chapter 5
+    ('scale_fare', CustomRobustTransformer('Fare')),  #from chapter 5
+    ('imputer', KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False))  #from chapter 6
+    ], verbose=True)
 
 # # transformed_df = titanic_transformer.fit_transform(titanic_features) # our transformed dataframe
 
