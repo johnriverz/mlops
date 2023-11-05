@@ -3,18 +3,24 @@ import numpy as np
 import sklearn
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
 
-from sklearn.impute import KNNImputer # final step of the pipeline
+from sklearn.impute import KNNImputer  # final step of the pipeline
 
 # brings in KNNImputer
 import subprocess
 import sys
-subprocess.call([sys.executable, '-m', 'pip', 'install', 'category_encoders'])  #replaces !pip install
+
+subprocess.call(
+    [sys.executable, "-m", "pip", "install", "category_encoders"]
+)  # replaces !pip install
 import category_encoders as ce
 
 # for find_random_state function
-from sklearn.neighbors import KNeighborsClassifier  #the KNN model
-from sklearn.metrics import f1_score  #typical metric used to measure goodness of a model
+from sklearn.neighbors import KNeighborsClassifier  # the KNN model
+from sklearn.metrics import (
+    f1_score,
+)  # typical metric used to measure goodness of a model
 
 sklearn.set_config(
     transform_output="pandas"
@@ -24,47 +30,6 @@ sklearn.set_config(
 titanic_variance_based_split = 107
 customer_variance_based_split = 113
 
-# # bring in tatanic data in trimmed form
-# lib_url = 'https://raw.githubusercontent.com/fickas/asynch_models/main/datasets/titanic_trimmed.csv'
-# titanic_trimmed = pd.read_csv(lib_url)
-# titanic_features = titanic_trimmed.drop(columns='Survived') # drop the label column
-
-# two transformers
-titanic_transformer = Pipeline(steps=[
-    ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
-    ('map_class', CustomMappingTransformer('Class', {'Crew': 0, 'C3': 1, 'C2': 2, 'C1': 3})),
-    ('target_joined', ce.TargetEncoder(cols=['Joined'],
-                           handle_missing='return_nan', #will use imputer later to fill in
-                           handle_unknown='return_nan'  #will use imputer later to fill in
-    )),
-    ('tukey_age', CustomTukeyTransformer(target_column='Age', fence='outer')),
-    ('tukey_fare', CustomTukeyTransformer(target_column='Fare', fence='outer')),
-    ('scale_age', CustomRobustTransformer('Age')),  #from chapter 5
-    ('scale_fare', CustomRobustTransformer('Fare')),  #from chapter 5
-    ('imputer', KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False))  #from chapter 6
-    ], verbose=True)
-
-# # transformed_df = titanic_transformer.fit_transform(titanic_features) # our transformed dataframe
-
-# customer_transformer = Pipeline(steps=[
-#     ('map_os', CustomMappingTransformer('OS', {'Android': 0, 'iOS': 1})),
-#     ('target_isp', ce.TargetEncoder(cols=['ISP'],
-#                            handle_missing='return_nan', #will use imputer later to fill in
-#                            handle_unknown='return_nan'  #will use imputer later to fill in
-#     )),
-#     ('map_level', CustomMappingTransformer('Experience Level', {'low': 0, 'medium': 1, 'high':2})),
-#     ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
-#     ('tukey_age', CustomTukeyTransformer('Age', 'inner')),  #from chapter 4
-#     ('tukey_time spent', CustomTukeyTransformer('Time Spent', 'inner')),  #from chapter 4
-#     ('scale_age', CustomRobustTransformer('Age')), #from 5
-#     ('scale_time spent', CustomRobustTransformer('Time Spent')), #from 5
-#     ('impute', KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False)),
-#     ], verbose=True)
-
-# # save fitted transformer
-# fitted_pipeline = titanic_transformer.fit(X_train, y_train)  #notice just fit method called
-# import joblib
-# joblib.dump(fitted_pipeline, 'fitted_pipeline.pkl')
 
 # This class will rename one or more columns.
 class CustomRenamingTransformer(BaseEstimator, TransformerMixin):
@@ -445,27 +410,90 @@ class CustomRobustTransformer(BaseEstimator, TransformerMixin):
         result = self.transform(X)
         return result
 
-# takes a dataframe and runs the variance code on it. 
+
+# takes a dataframe and runs the variance code on it.
 # returns the value to use for the random state in the split method
 def find_random_state(features_df, labels, n=200):
-  model = KNeighborsClassifier(n_neighbors=5)  #instantiate with k=5.
-  vars = []  #collect test_error/train_error where error based on F1 score
-  rs_val = 0
+    model = KNeighborsClassifier(n_neighbors=5)  # instantiate with k=5.
+    vars = []  # collect test_error/train_error where error based on F1 score
+    rs_val = 0
 
-  # loop thru each random state (i)
-  for i in range(1, n):
-      train_X, test_X, train_y, test_y = train_test_split(features_df, labels, test_size=0.2, shuffle=True,
-                                                      random_state=i, stratify=labels)
-      model.fit(train_X, train_y)  #train model
-      train_pred = model.predict(train_X)           #predict against training set
-      test_pred = model.predict(test_X)             #predict against test set
-      train_f1 = f1_score(train_y, train_pred)   #F1 on training predictions
-      test_f1 = f1_score(test_y, test_pred)      #F1 on test predictions
-      f1_ratio = test_f1/train_f1          #take the ratio
-      vars.append(f1_ratio)
+    # loop thru each random state (i)
+    for i in range(1, n):
+        train_X, test_X, train_y, test_y = train_test_split(
+            features_df,
+            labels,
+            test_size=0.2,
+            shuffle=True,
+            random_state=i,
+            stratify=labels,
+        )
+        model.fit(train_X, train_y)  # train model
+        train_pred = model.predict(train_X)  # predict against training set
+        test_pred = model.predict(test_X)  # predict against test set
+        train_f1 = f1_score(train_y, train_pred)  # F1 on training predictions
+        test_f1 = f1_score(test_y, test_pred)  # F1 on test predictions
+        f1_ratio = test_f1 / train_f1  # take the ratio
+        vars.append(f1_ratio)
 
-  rs_val = sum(vars)/len(vars)  #get average ratio value
+    rs_val = sum(vars) / len(vars)  # get average ratio value
 
-  idx = np.array(abs(vars - rs_val)).argmin()  #find the index of the smallest value
+    idx = np.array(abs(vars - rs_val)).argmin()  # find the index of the smallest value
 
-  return idx 
+    return idx
+
+
+# # bring in tatanic data in trimmed form
+# lib_url = 'https://raw.githubusercontent.com/fickas/asynch_models/main/datasets/titanic_trimmed.csv'
+# titanic_trimmed = pd.read_csv(lib_url)
+# titanic_features = titanic_trimmed.drop(columns='Survived') # drop the label column
+
+# two transformers
+titanic_transformer = Pipeline(
+    steps=[
+        ("map_gender", CustomMappingTransformer("Gender", {"Male": 0, "Female": 1})),
+        (
+            "map_class",
+            CustomMappingTransformer("Class", {"Crew": 0, "C3": 1, "C2": 2, "C1": 3}),
+        ),
+        (
+            "target_joined",
+            ce.TargetEncoder(
+                cols=["Joined"],
+                handle_missing="return_nan",  # will use imputer later to fill in
+                handle_unknown="return_nan",  # will use imputer later to fill in
+            ),
+        ),
+        ("tukey_age", CustomTukeyTransformer(target_column="Age", fence="outer")),
+        ("tukey_fare", CustomTukeyTransformer(target_column="Fare", fence="outer")),
+        ("scale_age", CustomRobustTransformer("Age")),  # from chapter 5
+        ("scale_fare", CustomRobustTransformer("Fare")),  # from chapter 5
+        (
+            "imputer",
+            KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False),
+        ),  # from chapter 6
+    ],
+    verbose=True,
+)
+
+# # transformed_df = titanic_transformer.fit_transform(titanic_features) # our transformed dataframe
+
+# customer_transformer = Pipeline(steps=[
+#     ('map_os', CustomMappingTransformer('OS', {'Android': 0, 'iOS': 1})),
+#     ('target_isp', ce.TargetEncoder(cols=['ISP'],
+#                            handle_missing='return_nan', #will use imputer later to fill in
+#                            handle_unknown='return_nan'  #will use imputer later to fill in
+#     )),
+#     ('map_level', CustomMappingTransformer('Experience Level', {'low': 0, 'medium': 1, 'high':2})),
+#     ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
+#     ('tukey_age', CustomTukeyTransformer('Age', 'inner')),  #from chapter 4
+#     ('tukey_time spent', CustomTukeyTransformer('Time Spent', 'inner')),  #from chapter 4
+#     ('scale_age', CustomRobustTransformer('Age')), #from 5
+#     ('scale_time spent', CustomRobustTransformer('Time Spent')), #from 5
+#     ('impute', KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False)),
+#     ], verbose=True)
+
+# # save fitted transformer
+# fitted_pipeline = titanic_transformer.fit(X_train, y_train)  #notice just fit method called
+# import joblib
+# joblib.dump(fitted_pipeline, 'fitted_pipeline.pkl')
