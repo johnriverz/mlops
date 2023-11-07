@@ -478,22 +478,78 @@ titanic_transformer = Pipeline(
 
 # # transformed_df = titanic_transformer.fit_transform(titanic_features) # our transformed dataframe
 
-customer_transformer = Pipeline(steps=[
-    ('map_os', CustomMappingTransformer('OS', {'Android': 0, 'iOS': 1})),
-    ('target_isp', ce.TargetEncoder(cols=['ISP'],
-                           handle_missing='return_nan', #will use imputer later to fill in
-                           handle_unknown='return_nan'  #will use imputer later to fill in
-    )),
-    ('map_level', CustomMappingTransformer('Experience Level', {'low': 0, 'medium': 1, 'high':2})),
-    ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
-    ('tukey_age', CustomTukeyTransformer('Age', 'inner')),  #from chapter 4
-    ('tukey_time spent', CustomTukeyTransformer('Time Spent', 'inner')),  #from chapter 4
-    ('scale_age', CustomRobustTransformer('Age')), #from 5
-    ('scale_time spent', CustomRobustTransformer('Time Spent')), #from 5
-    ('impute', KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False)),
-    ], verbose=True)
+customer_transformer = Pipeline(
+    steps=[
+        ("map_os", CustomMappingTransformer("OS", {"Android": 0, "iOS": 1})),
+        (
+            "target_isp",
+            ce.TargetEncoder(
+                cols=["ISP"],
+                handle_missing="return_nan",  # will use imputer later to fill in
+                handle_unknown="return_nan",  # will use imputer later to fill in
+            ),
+        ),
+        (
+            "map_level",
+            CustomMappingTransformer(
+                "Experience Level", {"low": 0, "medium": 1, "high": 2}
+            ),
+        ),
+        ("map_gender", CustomMappingTransformer("Gender", {"Male": 0, "Female": 1})),
+        ("tukey_age", CustomTukeyTransformer("Age", "inner")),  # from chapter 4
+        (
+            "tukey_time spent",
+            CustomTukeyTransformer("Time Spent", "inner"),
+        ),  # from chapter 4
+        ("scale_age", CustomRobustTransformer("Age")),  # from 5
+        ("scale_time spent", CustomRobustTransformer("Time Spent")),  # from 5
+        ("impute", KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False)),
+    ],
+    verbose=True,
+)
 
 # # save fitted transformer
 # fitted_pipeline = titanic_transformer.fit(X_train, y_train)  #notice just fit method called
 # import joblib
 # joblib.dump(fitted_pipeline, 'fitted_pipeline.pkl')
+
+
+# a data set-up function to avoid tedium of the steps we normally have to do manually
+# returns x_train_numpy, x_test_numpy, y_train_numpy, y_test_numpy
+def dataset_setup(original_table, label_column_name: str, the_transformer, rs, ts=0.2):
+    features = original_table.drop(columns=label_column_name)
+    labels = original_table[label_column_name].to_list()
+
+    x_train, x_test, y_train, y_test = train_test_split(
+        features, labels, test_size=ts, shuffle=True, random_state=rs, stratify=labels
+    )
+
+    x_train_transformed = the_transformer.fit_transform(x_train, y_train)
+    x_test_transformed = the_transformer.transform(x_test)
+
+    x_train_numpy = x_train_transformed.to_numpy()
+    x_test_numpy = x_test_transformed.to_numpy()
+    y_train_numpy = np.array(y_train)
+    y_test_numpy = np.array(y_test)
+
+    return x_train_numpy, x_test_numpy, y_train_numpy, y_test_numpy
+
+
+# a set-up function for customer dataset
+def customer_setup(
+    customer_table,
+    transformer=customer_transformer,
+    rs=customer_variance_based_split,
+    ts=0.2,
+):
+    return dataset_setup(customer_table, "Rating", transformer, rs=rs, ts=ts)
+
+
+# a set-up function for titanic dataset
+def titanic_setup(
+    titanic_table,
+    transformer=titanic_transformer,
+    rs=titanic_variance_based_split,
+    ts=0.2,
+):
+    return dataset_setup(titanic_table, "Survived", transformer, rs=rs, ts=ts)
