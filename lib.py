@@ -4,7 +4,12 @@ import sklearn
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score # for threshold_results
+from sklearn.metrics import (
+    precision_score,
+    recall_score,
+    f1_score,
+    accuracy_score,
+)  # for threshold_results
 
 from sklearn.impute import KNNImputer  # final step of the pipeline
 
@@ -30,6 +35,18 @@ sklearn.set_config(
 # random state variables
 titanic_variance_based_split = 107
 customer_variance_based_split = 113
+
+# load knn stuff from chapter 11 back in
+from joblib import load
+
+knn_model2 = load("knn_model.joblib")
+knn_model2.predict_proba(x_test)[:, 1][
+    :5
+]  # array([0.6       , 1.        , 1.        , 0.13333333, 0.06666667])
+
+best_knn_model.predict_proba(x_test)[:, 1][
+    :5
+]  # array([0.6       , 1.        , 1.        , 0.13333333, 0.06666667])
 
 
 # This class will rename one or more columns.
@@ -555,28 +572,41 @@ def titanic_setup(
 ):
     return dataset_setup(titanic_table, "Survived", transformer, rs=rs, ts=ts)
 
+
 # Produces values for a whole set of thresholds
 # Uses goodness measures Precision, Recall, F1 and accuracy (from confusion matrix)
 def threshold_results(thresh_list, actuals, predicted):
-  result_df = pd.DataFrame(columns=['threshold', 'precision', 'recall', 'f1', 'accuracy'])
-  for t in thresh_list:
-    yhat = [1 if v >=t else 0 for v in predicted]
-    #note: where TP=0, the Precision and Recall both become 0. And I am saying return 0 in that case.
-    precision = precision_score(actuals, yhat, zero_division=0)
-    recall = recall_score(actuals, yhat, zero_division=0)
-    f1 = f1_score(actuals, yhat)
-    accuracy = accuracy_score(actuals, yhat)
-    result_df.loc[len(result_df)] = {'threshold':t, 'precision':precision, 'recall':recall, 'f1':f1, 'accuracy':accuracy}
+    result_df = pd.DataFrame(
+        columns=["threshold", "precision", "recall", "f1", "accuracy"]
+    )
+    for t in thresh_list:
+        yhat = [1 if v >= t else 0 for v in predicted]
+        # note: where TP=0, the Precision and Recall both become 0. And I am saying return 0 in that case.
+        precision = precision_score(actuals, yhat, zero_division=0)
+        recall = recall_score(actuals, yhat, zero_division=0)
+        f1 = f1_score(actuals, yhat)
+        accuracy = accuracy_score(actuals, yhat)
+        result_df.loc[len(result_df)] = {
+            "threshold": t,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "accuracy": accuracy,
+        }
 
-  result_df = result_df.round(2)
+    result_df = result_df.round(2)
 
-  #Next bit fancies up table for printing. See https://betterdatascience.com/style-pandas-dataframes/
-  #Note that fancy_df is not really a dataframe. More like a printable object.
-  headers = {
-    "selector": "th:not(.index_name)",
-    "props": "background-color: #800000; color: white; text-align: center"
-  }
-  properties = {"border": "1px solid black", "width": "65px", "text-align": "center"}
+    # Next bit fancies up table for printing. See https://betterdatascience.com/style-pandas-dataframes/
+    # Note that fancy_df is not really a dataframe. More like a printable object.
+    headers = {
+        "selector": "th:not(.index_name)",
+        "props": "background-color: #800000; color: white; text-align: center",
+    }
+    properties = {"border": "1px solid black", "width": "65px", "text-align": "center"}
 
-  fancy_df = result_df.style.format(precision=2).set_properties(**properties).set_table_styles([headers])
-  return (result_df, fancy_df)
+    fancy_df = (
+        result_df.style.format(precision=2)
+        .set_properties(**properties)
+        .set_table_styles([headers])
+    )
+    return (result_df, fancy_df)
