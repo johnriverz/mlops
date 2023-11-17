@@ -43,14 +43,14 @@ customer_variance_based_split = 113
 # load knn stuff from chapter 11 back in
 from joblib import load
 
-knn_model2 = load("knn_model.joblib")
-knn_model2.predict_proba(x_test)[:, 1][
-    :5
-]  # array([0.6       , 1.        , 1.        , 0.13333333, 0.06666667])
+# knn_model2 = load("knn_model.joblib")
+# knn_model2.predict_proba(x_test)[:, 1][
+#     :5
+# ]  # array([0.6       , 1.        , 1.        , 0.13333333, 0.06666667])
 
-best_knn_model.predict_proba(x_test)[:, 1][
-    :5
-]  # array([0.6       , 1.        , 1.        , 0.13333333, 0.06666667])
+# best_knn_model.predict_proba(x_test)[:, 1][
+#     :5
+# ]  # array([0.6       , 1.        , 1.        , 0.13333333, 0.06666667])
 
 
 # This class will rename one or more columns.
@@ -616,6 +616,7 @@ def threshold_results(thresh_list, actuals, predicted):
     return (result_df, fancy_df)
 
 # uses halving grid search algorithm to iterate over specified parameter values with successive halving
+# returns best candidates for  params
 def halving_search(model, grid, x_train, y_train, factor=2, min_resources="exhaust", scoring='roc_auc'):
   #your code below
   halving_cv = HalvingGridSearchCV(
